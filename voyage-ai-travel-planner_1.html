@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOYAGE — Personal AI Travel Concierge (Gemini)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08090D;
+  --s1:#0F1116;
+  --s2:#161820;
+  --s3:#1D2028;
+  --border:rgba(255,255,255,.06);
+  --border-md:rgba(255,255,255,.11);
+  --gold:#C49A45;
+  --gold-l:#E2BC72;
+  --gold-dim:rgba(196,154,69,.12);
+  --gold-glow:rgba(196,154,69,.07);
+  --text:#EAE3D0;
+  --text-m:#857D6E;
+  --text-s:#4A453C;
+  --teal:#3B8B7A;
+  --teal-l:#4AADA0;
+  --rose:#8A4E4E;
+  --green:#4A7A5A;
+  --font-h:'Cormorant Garamond',Georgia,serif;
+  --font-b:'DM Sans',system-ui,sans-serif;
+  --r:10px;
+  --r-lg:14px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:14px;line-height:1.6;overflow:hidden}
+/* Layout */
+.app{display:grid;grid-template-columns:200px 1fr;grid-template-rows:54px 1fr;height:100vh}
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--s1)}
+.logo{font-family:var(--font-h);font-size:20px;font-weight:500;letter-spacing:.18em;color:var(--gold-l);flex:1}
+.logo span{font-style:italic;font-weight:300;color:var(--text-m);letter-spacing:.05em;font-size:13px;margin-left:8px}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.api-badge{display:flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--border-md);border-radius:20px;font-size:11px;color:var(--text-m);cursor:pointer;background:transparent;font-family:var(--font-b);letter-spacing:.04em;transition:all .2s}
+.api-badge:hover{border-color:var(--gold);color:var(--gold)}
+.api-badge.connected{border-color:rgba(74,122,90,.5);color:var(--green)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--text-s)}
+.dot.on{background:var(--green)}
+.sidebar{grid-row:2;background:var(--s1);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav-label{font-size:10px;letter-spacing:.12em;color:var(--text-s);padding:0 18px;margin:16px 0 6px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;color:var(--text-m);transition:all .2s;font-size:13px;border-left:2px solid transparent;font-family:var(--font-b)}
+.nav-item:hover{color:var(--text);background:var(--gold-glow)}
+.nav-item.active{color:var(--gold-l);background:var(--gold-dim);border-left-color:var(--gold)}
+.nav-icon{font-size:15px;width:18px;text-align:center;opacity:.7}
+.nav-item.active .nav-icon{opacity:1}
+.sidebar-dna{margin-top:auto;padding:14px 18px;border-top:1px solid var(--border)}
+.dna-label{font-size:10px;letter-spacing:.1em;color:var(--text-s);text-transform:uppercase;margin-bottom:8px}
+.dna-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-m);background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;margin:2px}
+/* Main */
+.main{grid-row:2;overflow-y:auto;background:var(--bg)}
+.view{display:none;animation:fadeIn .3s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* Page headers */
+.page-header{padding:32px 36px 0}
+.page-title{font-family:var(--font-h);font-size:34px;font-weight:400;color:var(--text);letter-spacing:.01em}
+.page-title em{font-style:italic;color:var(--gold-l)}
+.page-subtitle{font-size:13px;color:var(--text-m);margin-top:4px}
+/* Cards */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px}
+.card-sm{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+/* Grid layouts */
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+/* Stat cards */
+.stat-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.stat-num{font-family:var(--font-h);font-size:32px;font-weight:500;color:var(--gold-l);line-height:1}
+.stat-label{font-size:11px;color:var(--text-m);letter-spacing:.05em;margin-top:4px}
+/* Section spacing */
+.section{padding:24px 36px}
+.section-title{font-family:var(--font-h);font-size:18px;font-weight:500;color:var(--text);margin-bottom:14px;letter-spacing:.02em}
+.section-title small{font-family:var(--font-b);font-size:12px;color:var(--text-m);font-weight:400;margin-left:8px;letter-spacing:0}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:var(--r);border:1px solid var(--border-md);background:transparent;color:var(--text);cursor:pointer;font-family:var(--font-b);font-size:13px;transition:all .2s;white-space:nowrap}
+.btn:hover{border-color:var(--gold);color:var(--gold)}
+.btn-gold{background:var(--gold);border-color:var(--gold);color:#0A0800;font-weight:500}
+.btn-gold:hover{background:var(--gold-l);border-color:var(--gold-l);color:#0A0800}
+.btn-lg{padding:11px 22px;font-size:14px;border-radius:var(--r)}
+.btn-sm{padding:5px 11px;font-size:12px}
+/* Forms */
+.form-group{margin-bottom:16px}
+.form-label{font-size:11px;letter-spacing:.08em;color:var(--text-m);text-transform:uppercase;margin-bottom:7px;display:block}
+.form-input{width:100%;background:var(--s2);border:1px solid var(--border-md);border-radius:var(--r);padding:9px 12px;color:var(--text);font-family:var(--font-b);font-size:13px;outline:none;transition:all .2s}
+.form-input:focus{border-color:var(--gold);background:var(--s3)}
+.form-input::placeholder{color:var(--text-s)}
+select.form-input{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23857D6E'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
+/* Tag selector */
+.tag-group{display:flex;flex-wrap:wrap;gap:7px}
+.tag{padding:5px 11px;border:1px solid var(--border-md);border-radius:20px;font-size:12px;color:var(--text-m);cursor:pointer;transition:all .2s;background:transparent}
+.tag:hover{border-color:var(--gold);color:var(--gold)}
+.tag.selected{background:var(--gold-dim);border-color:var(--gold);color:var(--gold-l)}
+/* Budget slider */
+.budget-bar{display:flex;gap:6px;margin-top:4px}
+.budget-opt{flex:1;padding:8px;text-align:center;border:1px solid var(--border-md);border-radius:var(--r);cursor:pointer;font-size:12px;color:var(--text-m);transition:all .2s}
+.budget-opt:hover{border-color:var(--gold);color:var(--gold)}
+.budget-opt.selected{background:var(--gold-dim);border-color:var(--gold);color:var(--gold-l)}
+.budget-opt .b-icon{font-size:16px;margin-bottom:2px}
+.budget-opt .b-label{font-size:10px;letter-spacing:.03em}
+/* Mood chips */
+.mood-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mood-chip{padding:10px 8px;border:1px solid var(--border);border-radius:var(--r);text-align:center;cursor:pointer;transition:all .2s;background:var(--s2)}
+.mood-chip:hover{border-color:var(--gold);background:var(--gold-glow)}
+.mood-chip.selected{border-color:var(--gold);background:var(--gold-dim)}
+.mood-chip .m-icon{font-size:20px;margin-bottom:4px}
+.mood-chip .m-label{font-size:11px;color:var(--text-m)}
+.mood-chip.selected .m-label{color:var(--gold-l)}
+/* Itinerary output */
+.itinerary-output{background:var(--s1);border:1px solid var(--border-md);border-radius:var(--r-lg);padding:24px;margin-top:24px}
+.itinerary-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.itinerary-title{font-family:var(--font-h);font-size:28px;font-weight:400;color:var(--text)}
+.itinerary-title em{font-style:italic;color:var(--gold-l)}
+.itinerary-meta{display:flex;gap:16px;margin-top:6px}
+.meta-tag{font-size:12px;color:var(--text-m);display:flex;align-items:center;gap:5px}
+.day-block{margin-bottom:20px;padding:16px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);border-left:3px solid var(--gold)}
+.day-header{font-family:var(--font-h);font-size:17px;font-weight:500;color:var(--gold-l);margin-bottom:10px}
+.period{margin-bottom:10px}
+.period-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-s);margin-bottom:5px}
+.period-content{font-size:13px;color:var(--text);line-height:1.7}
+.tip-box{background:rgba(59,139,122,.08);border:1px solid rgba(59,139,122,.2);border-radius:var(--r);padding:12px 14px;margin-top:14px}
+.tip-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-l);margin-bottom:4px}
+.tip-text{font-size:13px;color:var(--text);line-height:1.6}
+/* Discover cards */
+.destination-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;transition:all .3s;cursor:pointer}
+.destination-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.dest-header{padding:20px;border-bottom:1px solid var(--border)}
+.dest-name{font-family:var(--font-h);font-size:22px;font-weight:500;color:var(--text)}
+.dest-country{font-size:12px;color:var(--text-m);margin-top:2px}
+.dest-match{display:inline-flex;align-items:center;gap:5px;background:var(--gold-dim);border:1px solid rgba(196,154,69,.3);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--gold-l);margin-top:8px}
+.dest-body{padding:16px 20px}
+.dest-why{font-size:13px;color:var(--text);line-height:1.7;margin-bottom:12px}
+.dest-tags{display:flex;flex-wrap:wrap;gap:6px}
+.dest-tag{font-size:11px;padding:3px 9px;background:var(--s3);border:1px solid var(--border);border-radius:4px;color:var(--text-m)}
+.dest-footer{padding:12px 20px;background:var(--s1);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.dest-cost{font-size:12px;color:var(--text-m)}
+.dest-cost strong{color:var(--text);font-size:14px}
+/* Chat */
+.chat-container{display:flex;flex-direction:column;height:calc(100vh - 54px)}
+.chat-header{padding:20px 28px;border-bottom:1px solid var(--border);background:var(--s1)}
+.chat-title{font-family:var(--font-h);font-size:22px;font-weight:400}
+.chat-subtitle{font-size:12px;color:var(--text-m);margin-top:2px}
+.chat-messages{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:16px}
+.message{max-width:78%;animation:fadeIn .25s ease}
+.message.user{align-self:flex-end}
+.message.ai{align-self:flex-start}
+.msg-bubble{padding:12px 16px;border-radius:var(--r-lg);font-size:13px;line-height:1.7}
+.message.user .msg-bubble{background:var(--gold-dim);border:1px solid rgba(196,154,69,.25);color:var(--text);border-bottom-right-radius:4px}
+.message.ai .msg-bubble{background:var(--s2);border:1px solid var(--border-md);color:var(--text);border-bottom-left-radius:4px}
+.msg-meta{font-size:11px;color:var(--text-s);margin-top:4px}
+.message.user .msg-meta{text-align:right}
+.chat-input-area{padding:16px 28px;border-top:1px solid var(--border);background:var(--s1);display:flex;gap:10px;align-items:flex-end}
+.chat-input{flex:1;background:var(--s2);border:1px solid var(--border-md);border-radius:var(--r);padding:10px 14px;color:var(--text);font-family:var(--font-b);font-size:13px;outline:none;resize:none;max-height:100px;min-height:40px;line-height:1.5}
+.chat-input:focus{border-color:var(--gold)}
+.chat-send{padding:10px 16px;background:var(--gold);border:none;border-radius:var(--r);color:#0A0800;cursor:pointer;font-size:16px;transition:all .2s;height:40px;align-self:flex-end}
+.chat-send:hover{background:var(--gold-l)}
+.chat-send:disabled{opacity:.4;cursor:not-allowed}
+.quick-prompts{padding:12px 28px;display:flex;gap:7px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+.quick-prompt{padding:5px 12px;background:transparent;border:1px solid var(--border-md);border-radius:20px;color:var(--text-m);cursor:pointer;font-size:12px;font-family:var(--font-b);transition:all .2s}
+.quick-prompt:hover{border-color:var(--gold);color:var(--gold)}
+/* Travel DNA / Profile */
+.dna-section{padding:24px 36px}
+.dna-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.profile-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px}
+.profile-card-title{font-family:var(--font-h);font-size:17px;font-weight:500;color:var(--text);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.prof-icon{font-size:16px;color:var(--gold)}
+/* Loading */
+.loading{display:flex;align-items:center;gap:10px;color:var(--text-m);font-size:13px;padding:20px 0}
+.spinner{width:16px;height:16px;border:2px solid var(--border-md);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(4px)}
+.modal{background:var(--s1);border:1px solid var(--border-md);border-radius:var(--r-lg);padding:30px;width:460px;max-width:90vw}
+.modal-title{font-family:var(--font-h);font-size:22px;font-weight:400;margin-bottom:6px;color:var(--text)}
+.modal-subtitle{font-size:13px;color:var(--text-m);margin-bottom:22px;line-height:1.6}
+.modal-note{font-size:11px;color:var(--text-s);margin-top:14px;line-height:1.6}
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--s3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-s)}
+/* Markdown-like output */
+.ai-content h3{font-family:var(--font-h);font-size:17px;font-weight:500;color:var(--gold-l);margin:14px 0 6px}
+.ai-content h4{font-family:var(--font-h);font-size:15px;font-weight:500;color:var(--text);margin:10px 0 4px}
+.ai-content p{margin-bottom:8px;line-height:1.7}
+.ai-content ul,.ai-content ol{margin:6px 0 10px 18px}
+.ai-content li{margin-bottom:4px;line-height:1.6}
+.ai-content strong{color:var(--gold-l);font-weight:500}
+.ai-content em{color:var(--text-m);font-style:italic}
+.ai-content hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+/* Rich itinerary styles */
+.itin-day{display:flex;gap:20px;margin-bottom:28px;position:relative}
+.day-num{font-family:var(--font-h);font-size:52px;font-weight:300;color:var(--border-md);line-height:1;width:52px;flex-shrink:0;padding-top:4px;text-align:center}
+.day-content{flex:1;min-width:0}
+.day-title{font-family:var(--font-h);font-size:21px;font-weight:500;color:var(--text);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.day-title em{color:var(--gold-l);font-style:italic}
+.period-block{margin-bottom:10px;padding:13px 15px;border-radius:var(--r);background:var(--s2)}
+.period-block.morning{border-left:3px solid var(--gold)}
+.period-block.afternoon{border-left:3px solid var(--teal)}
+.period-block.evening{border-left:3px solid #9B6B6B}
+.period-head{font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:6px;font-weight:500}
+.morning .period-head{color:var(--gold-l)}
+.afternoon .period-head{color:var(--teal-l)}
+.evening .period-head{color:#C08080}
+.period-body{font-size:13px;color:var(--text);line-height:1.75}
+.period-body strong{color:var(--gold-l);font-weight:500}
+.cost-pill{display:inline-flex;align-items:center;background:rgba(196,154,69,.13);border:1px solid rgba(196,154,69,.28);border-radius:4px;padding:1px 7px;font-size:11px;color:var(--gold-l);white-space:nowrap;vertical-align:middle;margin:0 2px}
+.gem-box{background:rgba(59,139,122,.07);border:1px solid rgba(59,139,122,.22);border-radius:var(--r);padding:13px 15px;margin-top:12px}
+.gem-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal-l);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.gem-body{font-size:13px;color:var(--text);line-height:1.7}
+.gem-body strong{color:var(--teal-l);font-weight:500}
+.checklist-box{background:var(--s2);border:1px solid var(--border-md);border-radius:var(--r-lg);padding:20px;margin-top:20px}
+.checklist-title{font-family:var(--font-h);font-size:18px;font-weight:500;color:var(--gold-l);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.check-items{list-style:none;padding:0;display:flex;flex-direction:column;gap:2px}
+.check-items li{padding:8px 10px;border-radius:6px;font-size:13px;color:var(--text);display:flex;align-items:flex-start;gap:10px;line-height:1.6;background:var(--s3);margin-bottom:4px}
+.check-items li::before{content:'○';color:var(--gold);flex-shrink:0;margin-top:1px}
+.check-items li strong{color:var(--gold-l);font-weight:500}
+.itin-day-divider{height:1px;background:var(--border);margin:4px 0 28px 72px}
+/* Itinerary images */
+.itin-hero-wrap{width:100%;height:220px;border-radius:var(--r-lg);overflow:hidden;margin-bottom:24px;background:var(--s2);position:relative}
+.itin-hero-wrap img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .6s}
+.itin-hero-wrap img.vis{opacity:1}
+.itin-hero-wrap .hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(8,9,13,.6) 0%,transparent 60%);pointer-events:none}
+.itin-hero-wrap .hero-label{position:absolute;bottom:14px;left:18px;font-family:var(--font-h);font-size:22px;font-weight:400;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+.day-img-wrap{width:100%;height:170px;border-radius:var(--r);overflow:hidden;margin-bottom:14px;background:var(--s3);display:flex;align-items:center;justify-content:center}
+.day-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s}
+.day-img-wrap img.vis{opacity:1}
+.day-img-loading{font-size:11px;color:var(--text-s);display:flex;align-items:center;gap:7px}
+/* Dashboard specific */
+.quick-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.quick-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;cursor:pointer;transition:all .25s;flex:1;min-width:160px}
+.quick-card:hover{border-color:var(--gold);background:var(--gold-glow)}
+.quick-card .qc-icon{font-size:22px;margin-bottom:8px}
+.quick-card .qc-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px}
+.quick-card .qc-desc{font-size:12px;color:var(--text-m)}
+/* Trip cards */
+.trip-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;gap:14px;align-items:flex-start;transition:border-color .2s;cursor:pointer}
+.trip-card:hover{border-color:var(--border-md)}
+.trip-icon{width:40px;height:40px;background:var(--gold-dim);border:1px solid rgba(196,154,69,.2);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.trip-info .trip-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:3px}
+.trip-info .trip-meta{font-size:12px;color:var(--text-m)}
+.trip-info .trip-tags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.trip-tag{font-size:10px;padding:2px 7px;background:var(--s3);border:1px solid var(--border);border-radius:3px;color:var(--text-s)}
+/* Range */
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:var(--s3);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--gold);border-radius:50%;cursor:pointer}
+/* Notification toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--s2);border:1px solid var(--border-md);border-radius:var(--r);padding:12px 18px;font-size:13px;color:var(--text);z-index:2000;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{border-color:rgba(74,122,90,.4);background:rgba(74,122,90,.12);color:var(--text)}
+/* Separator */
+.sep{height:1px;background:var(--border);margin:20px 0}
+/* Responsive width in content */
+.content-wrap{max-width:880px}
+/* Insights bar */
+.insight-bar{background:var(--gold-dim);border:1px solid rgba(196,154,69,.2);border-radius:var(--r);padding:12px 16px;font-size:13px;color:var(--text);line-height:1.6}
+.insight-bar strong{color:var(--gold-l)}
+/* Steps */
+.steps{display:flex;gap:8px;margin-bottom:24px}
+.step{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-s)}
+.step.active{color:var(--gold-l)}
+.step.done{color:var(--green)}
+.step-num{width:20px;height:20px;border-radius:50%;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.step-sep{flex:1;height:1px;background:var(--border)}
+/* Skeleton */
+.skeleton{background:linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:4px;height:14px;margin-bottom:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="logo">VOYAGE <span>/ your personal travel concierge</span></div>
+    <div class="topbar-actions">
+      <button class="api-badge" id="apiBtn" onclick="openApiModal()">
+        <div class="dot" id="apiDot"></div>
+        <span id="apiLabel">Connect Claude API</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="nav-label">Navigate</div>
+    <div class="nav-item active" data-view="dashboard" onclick="navigate('dashboard', this)">
+      <span class="nav-icon">⊹</span> Dashboard
+    </div>
+    <div class="nav-item" data-view="plan" onclick="navigate('plan', this)">
+      <span class="nav-icon">✦</span> Plan a Trip
+    </div>
+    <div class="nav-item" data-view="discover" onclick="navigate('discover', this)">
+      <span class="nav-icon">◎</span> Discover
+    </div>
+    <div class="nav-item" data-view="concierge" onclick="navigate('concierge', this)">
+      <span class="nav-icon">◈</span> Concierge
+    </div>
+    <div class="nav-label">You</div>
+    <div class="nav-item" data-view="mytrips" onclick="navigate('mytrips', this)">
+      <span class="nav-icon">⊡</span> My Trips
+    </div>
+    <div class="nav-item" data-view="dna" onclick="navigate('dna', this)">
+      <span class="nav-icon">◇</span> Travel DNA
+    </div>
+
+    <div class="sidebar-dna" id="sidebarDna">
+      <div class="dna-label">Your Style</div>
+      <div id="dnaTags"></div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <div class="view active" id="view-dashboard">
+      <div class="page-header">
+        <div class="page-title" id="dashGreeting">Good morning, <em>Traveller</em></div>
+        <div class="page-subtitle">Where will you wander next?</div>
+      </div>
+      <div class="section">
+        <div class="grid-4" style="margin-bottom:24px">
+          <div class="stat-card"><div class="stat-num" id="statTrips">0</div><div class="stat-label">Trips Planned</div></div>
+          <div class="stat-card"><div class="stat-num" id="statCountries">0</div><div class="stat-label">Destinations</div></div>
+          <div class="stat-card"><div class="stat-num" id="statStyle">—</div><div class="stat-label">Travel Style</div></div>
+          <div class="stat-card"><div class="stat-num" id="statBudget">—</div><div class="stat-label">Budget Tier</div></div>
+        </div>
+
+        <div class="section-title">Quick Start</div>
+        <div class="quick-actions">
+          <div class="quick-card" onclick="navigate('plan', document.querySelector('[data-view=plan]'))">
+            <div class="qc-icon">✈</div>
+            <div class="qc-title">Plan a New Trip</div>
+            <div class="qc-desc">AI-crafted full itinerary</div>
+          </div>
+          <div class="quick-card" onclick="navigate('discover', document.querySelector('[data-view=discover]'))">
+            <div class="qc-icon">🔭</div>
+            <div class="qc-title">Discover a Destination</div>
+            <div class="qc-desc">Find where to go next</div>
+          </div>
+          <div class="quick-card" onclick="navigate('concierge', document.querySelector('[data-view=concierge]'))">
+            <div class="qc-icon">◈</div>
+            <div class="qc-title">Ask Concierge</div>
+            <div class="qc-desc">Real-time travel help</div>
+          </div>
+          <div class="quick-card" onclick="navigate('dna', document.querySelector('[data-view=dna]'))">
+            <div class="qc-icon">◇</div>
+            <div class="qc-title">Update Travel DNA</div>
+            <div class="qc-desc">Refine your preferences</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="padding-top:0">
+        <div class="sep"></div>
+        <div class="section-title">Recent Trips <small>from your library</small></div>
+        <div style="display:flex;flex-direction:column;gap:10px" id="recentTrips">
+          <div style="color:var(--text-m);font-size:13px;padding:20px;text-align:center;background:var(--s1);border:1px dashed var(--border);border-radius:var(--r)">
+            No saved trips yet — plan your first journey above ✦
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="padding-top:0" id="dashInsight">
+      </div>
+    </div>
+
+    <!-- ===================== PLAN A TRIP ===================== -->
+    <div class="view" id="view-plan">
+      <div class="page-header">
+        <div class="page-title">Plan a <em>Trip</em></div>
+        <div class="page-subtitle">Tell VOYAGE what you're dreaming of — it handles the rest</div>
+      </div>
+      <div class="section">
+        <div class="content-wrap">
+          <div class="grid-2" style="gap:20px">
+            <!-- LEFT: Form -->
+            <div>
+              <div class="card">
+                <div class="form-group">
+                  <label class="form-label">Destination (or leave blank for a surprise)</label>
+                  <input type="text" class="form-input" id="planDest" placeholder="e.g. Japan, Amalfi Coast, Southeast Asia…">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Trip Duration</label>
+                  <select class="form-input" id="planDuration">
+                    <option value="3 days">Weekend — 3 days</option>
+                    <option value="5–6 days">Short break — 5–6 days</option>
+                    <option value="7–10 days" selected>1–2 Weeks — 7–10 days</option>
+                    <option value="2–3 weeks">Longer trip — 2–3 weeks</option>
+                    <option value="a month+">Extended — 1 month+</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">When are you travelling?</label>
+                  <select class="form-input" id="planSeason">
+                    <option>Spring (March–May)</option>
+                    <option>Summer (June–August)</option>
+                    <option>Autumn (September–November)</option>
+                    <option>Winter (December–February)</option>
+                    <option>Flexible — anytime</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Who's travelling?</label>
+                  <select class="form-input" id="planGroup">
+                    <option>Solo</option>
+                    <option>Couple / Partner</option>
+                    <option>Friends (small group)</option>
+                    <option>Family with children</option>
+                    <option>Large group</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Daily Budget per Person</label>
+                  <div class="budget-bar">
+                    <div class="budget-opt" data-budget="Budget ($50–100/day)" onclick="selectBudget(this)">
+                      <div class="b-icon">🎒</div>
+                      <div class="b-label">Budget</div>
+                      <div style="font-size:10px;color:var(--text-s)">$50–100</div>
+                    </div>
+                    <div class="budget-opt selected" data-budget="Mid-range ($100–200/day)" onclick="selectBudget(this)">
+                      <div class="b-icon">🏨</div>
+                      <div class="b-label">Mid-range</div>
+                      <div style="font-size:10px;color:var(--text-s)">$100–200</div>
+                    </div>
+                    <div class="budget-opt" data-budget="Comfort ($200–400/day)" onclick="selectBudget(this)">
+                      <div class="b-icon">⭐</div>
+                      <div class="b-label">Comfort</div>
+                      <div style="font-size:10px;color:var(--text-s)">$200–400</div>
+                    </div>
+                    <div class="budget-opt" data-budget="Luxury ($400+/day)" onclick="selectBudget(this)">
+                      <div class="b-icon">✦</div>
+                      <div class="b-label">Luxury</div>
+                      <div style="font-size:10px;color:var(--text-s)">$400+</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card" style="margin-top:14px">
+                <div class="form-group" style="margin-bottom:12px">
+                  <label class="form-label">Trip Mood &amp; Vibe</label>
+                  <div class="mood-grid" id="moodGrid">
+                    <div class="mood-chip selected" data-mood="Cultural immersion"><div class="m-icon">🏛</div><div class="m-label">Culture</div></div>
+                    <div class="mood-chip" data-mood="Food & culinary experiences"><div class="m-icon">🍜</div><div class="m-label">Food</div></div>
+                    <div class="mood-chip" data-mood="Adventure & outdoor activities"><div class="m-icon">🧗</div><div class="m-label">Adventure</div></div>
+                    <div class="mood-chip" data-mood="Rest & relaxation on beaches or nature"><div class="m-icon">🌊</div><div class="m-label">Relaxation</div></div>
+                    <div class="mood-chip" data-mood="Urban exploration & city life"><div class="m-icon">🏙</div><div class="m-label">Urban</div></div>
+                    <div class="mood-chip" data-mood="Nature & wildlife"><div class="m-icon">🌿</div><div class="m-label">Nature</div></div>
+                    <div class="mood-chip" data-mood="History & heritage sites"><div class="m-icon">📜</div><div class="m-label">History</div></div>
+                    <div class="mood-chip" data-mood="Nightlife & social experiences"><div class="m-icon">🌙</div><div class="m-label">Nightlife</div></div>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0">
+                  <label class="form-label">Anything specific you want? (optional)</label>
+                  <textarea class="form-input" id="planNotes" rows="2" placeholder="e.g. I love local markets, prefer boutique stays, avoid tourist traps…"></textarea>
+                </div>
+              </div>
+
+              <button class="btn btn-gold btn-lg" style="width:100%;margin-top:14px;justify-content:center;font-size:15px" onclick="generateItinerary()">
+                ✦ Generate My Itinerary
+              </button>
+            </div>
+
+            <!-- RIGHT: Output -->
+            <div id="planOutput">
+              <div class="card" style="border-style:dashed;text-align:center;padding:40px 24px;color:var(--text-m)">
+                <div style="font-size:32px;margin-bottom:12px">✦</div>
+                <div style="font-family:var(--font-h);font-size:18px;font-weight:400;margin-bottom:8px">Your itinerary appears here</div>
+                <div style="font-size:13px">Fill in your travel details and hit Generate. VOYAGE will craft a complete day-by-day plan tailored to your Travel DNA.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== DISCOVER ===================== -->
+    <div class="view" id="view-discover">
+      <div class="page-header">
+        <div class="page-title"><em>Discover</em> Your Next Destination</div>
+        <div class="page-subtitle">Describe a mood, a feeling, or a dream — VOYAGE finds your match</div>
+      </div>
+      <div class="section">
+        <div class="content-wrap">
+          <div class="card" style="margin-bottom:20px">
+            <div class="form-group" style="margin-bottom:12px">
+              <label class="form-label">What are you feeling called to experience?</label>
+              <textarea class="form-input" id="discoverMood" rows="3" placeholder="e.g. I want somewhere dramatic and moody — medieval architecture, incredible local food, not too touristy, and cool autumn weather. Budget around $150/day…"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:12px">
+              <label class="form-label">Must-haves (pick any)</label>
+              <div class="tag-group" id="discoverTags">
+                <div class="tag selected" data-tag="Food scene">Food scene</div>
+                <div class="tag" data-tag="Off the beaten path">Off the beaten path</div>
+                <div class="tag" data-tag="Beach access">Beach access</div>
+                <div class="tag" data-tag="Mountains">Mountains</div>
+                <div class="tag" data-tag="History & architecture">History & architecture</div>
+                <div class="tag" data-tag="Vibrant nightlife">Vibrant nightlife</div>
+                <div class="tag" data-tag="Outdoor adventure">Outdoor adventure</div>
+                <div class="tag" data-tag="Art & museums">Art & museums</div>
+                <div class="tag" data-tag="Easy to navigate solo">Easy solo travel</div>
+                <div class="tag" data-tag="Romantic atmosphere">Romantic</div>
+                <div class="tag" data-tag="Family-friendly">Family-friendly</div>
+                <div class="tag" data-tag="Safe for solo women">Safe for women</div>
+              </div>
+            </div>
+            <div class="grid-2" style="margin-bottom:12px">
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Travel Month</label>
+                <select class="form-input" id="discoverMonth">
+                  <option>January</option><option>February</option><option>March</option><option>April</option>
+                  <option>May</option><option>June</option><option>July</option><option>August</option>
+                  <option>September</option><option>October</option><option>November</option><option>December</option>
+                  <option>Flexible</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Flying From</label>
+                <input type="text" class="form-input" id="discoverFrom" placeholder="Your city or airport">
+              </div>
+            </div>
+            <button class="btn btn-gold" onclick="discoverDestinations()" style="width:100%;justify-content:center">◎ Find My Destinations</button>
+          </div>
+          <div id="discoverOutput"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== CONCIERGE ===================== -->
+    <div class="view" id="view-concierge">
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="chat-title">Travel <em style="font-style:italic;color:var(--gold-l);font-family:var(--font-h)">Concierge</em></div>
+          <div class="chat-subtitle">Your always-on travel companion — ask anything, anytime</div>
+        </div>
+        <div class="quick-prompts">
+          <span style="font-size:11px;color:var(--text-s);align-self:center;margin-right:4px">Try:</span>
+          <button class="quick-prompt" onclick="sendQuick('What visa do I need for Japan as a Singapore passport holder?')">🗾 Japan visa from SG</button>
+          <button class="quick-prompt" onclick="sendQuick('Best time to visit Iceland for the Northern Lights?')">🌌 Iceland Northern Lights</button>
+          <button class="quick-prompt" onclick="sendQuick('Pack list for 10 days in Southeast Asia in rainy season')">🎒 SE Asia packing list</button>
+          <button class="quick-prompt" onclick="sendQuick('What are some underrated hidden gem countries to visit in 2025?')">💎 Hidden gem countries</button>
+          <button class="quick-prompt" onclick="sendQuick('How do I find and book local cooking classes abroad?')">🍳 Cooking classes abroad</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="message ai">
+            <div class="msg-bubble">
+              <strong>Welcome to your personal Travel Concierge.</strong><br><br>
+              I'm here to help with everything travel — visa requirements, destination advice, packing lists, booking tips, local insights, real-time questions on the road, or planning your next adventure.<br><br>
+              What can I help you with today?
+            </div>
+            <div class="msg-meta">VOYAGE Concierge</div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <textarea class="chat-input" id="chatInput" placeholder="Ask anything about travel…" onkeydown="chatKeydown(event)" rows="1"></textarea>
+          <button class="chat-send" id="chatSendBtn" onclick="sendChatMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== MY TRIPS ===================== -->
+    <div class="view" id="view-mytrips">
+      <div class="page-header">
+        <div class="page-title">My <em>Trips</em></div>
+        <div class="page-subtitle">Your saved itineraries and travel plans</div>
+      </div>
+      <div class="section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div class="section-title" style="margin-bottom:0">Saved Plans <span id="tripCount" style="font-family:var(--font-b);font-size:12px;color:var(--text-m);font-weight:400"></span></div>
+          <button class="btn btn-sm" onclick="navigate('plan', document.querySelector('[data-view=plan]'))">+ New Trip</button>
+        </div>
+        <div id="myTripsList" style="display:flex;flex-direction:column;gap:12px">
+          <div style="color:var(--text-m);font-size:13px;padding:30px;text-align:center;background:var(--s1);border:1px dashed var(--border);border-radius:var(--r)">
+            No saved trips yet. Plan your first journey → ✦
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TRAVEL DNA ===================== -->
+    <div class="view" id="view-dna">
+      <div class="page-header">
+        <div class="page-title">Your Travel <em>DNA</em></div>
+        <div class="page-subtitle">The more VOYAGE knows about you, the smarter your plans get</div>
+      </div>
+      <div class="dna-section">
+        <div class="content-wrap">
+          <div class="insight-bar" style="margin-bottom:24px">
+            <strong>Why this matters:</strong> Your Travel DNA is the intelligence layer behind every VOYAGE recommendation. It personalises itineraries, filters suggestions, and ensures the Concierge always knows your context.
+          </div>
+          <div class="dna-grid">
+            <div class="profile-card">
+              <div class="profile-card-title"><span class="prof-icon">◇</span> Identity</div>
+              <div class="form-group">
+                <label class="form-label">Your Name (for personalised greetings)</label>
+                <input type="text" class="form-input" id="dnaName" placeholder="e.g. Olivia">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Home Base / City</label>
+                <input type="text" class="form-input" id="dnaHome" placeholder="e.g. Singapore">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Passport Country</label>
+                <input type="text" class="form-input" id="dnaPassport" placeholder="e.g. Singapore, UK, USA">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Languages Spoken</label>
+                <input type="text" class="form-input" id="dnaLanguages" placeholder="e.g. English, Mandarin, basic French">
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <div class="profile-card-title"><span class="prof-icon">✦</span> Travel Style</div>
+              <div class="form-group">
+                <label class="form-label">Default Travel Pace</label>
+                <select class="form-input" id="dnaPace">
+                  <option>Slow & immersive — 2–3 things per day</option>
+                  <option selected>Balanced — see a good amount without rushing</option>
+                  <option>Active — I want to pack in as much as possible</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Preferred Accommodation</label>
+                <select class="form-input" id="dnaAccom">
+                  <option>Hostels / Budget guesthouses</option>
+                  <option>Boutique hotels &amp; guesthouses</option>
+                  <option selected>Mid-range hotels (3–4 star)</option>
+                  <option>Upscale hotels &amp; resorts (4–5 star)</option>
+                  <option>Luxury &amp; design hotels</option>
+                  <option>Mix — comfort on location matters</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Budget Comfort Level</label>
+                <select class="form-input" id="dnaBudget">
+                  <option>Backpacker — stretch every dollar</option>
+                  <option>Budget-conscious but flexible</option>
+                  <option selected>Mid-range — good value for money</option>
+                  <option>Comfort-oriented — splurge on key experiences</option>
+                  <option>Luxury — quality over cost</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <div class="profile-card-title"><span class="prof-icon">🍽</span> Food & Lifestyle</div>
+              <div class="form-group">
+                <label class="form-label">Dietary Preferences</label>
+                <input type="text" class="form-input" id="dnaFood" placeholder="e.g. No dietary restrictions, vegetarian, halal…">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Food Priorities (describe freely)</label>
+                <textarea class="form-input" id="dnaFoodNotes" rows="2" placeholder="e.g. I love local street food and hidden gems. I'll always choose a packed local restaurant over a tourist-facing one."></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Physical Fitness Level</label>
+                <select class="form-input" id="dnaFitness">
+                  <option>Low — prefer minimal walking, no strenuous activity</option>
+                  <option>Moderate — comfortable with regular walking</option>
+                  <option selected>Good — can handle hiking, cycling, active days</option>
+                  <option>High — love adventure sports and physically demanding trips</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <div class="profile-card-title"><span class="prof-icon">◎</span> Interests & Passions</div>
+              <div class="form-group">
+                <label class="form-label">Top Travel Interests (select all that apply)</label>
+                <div class="tag-group" id="dnaInterests">
+                  <div class="tag" data-tag="Art & museums">Art & museums</div>
+                  <div class="tag selected" data-tag="History & heritage">History & heritage</div>
+                  <div class="tag selected" data-tag="Local food scene">Local food scene</div>
+                  <div class="tag" data-tag="Architecture">Architecture</div>
+                  <div class="tag" data-tag="Nature & hiking">Nature & hiking</div>
+                  <div class="tag" data-tag="Photography">Photography</div>
+                  <div class="tag" data-tag="Beaches">Beaches</div>
+                  <div class="tag" data-tag="Nightlife">Nightlife</div>
+                  <div class="tag" data-tag="Live music">Live music</div>
+                  <div class="tag selected" data-tag="Local markets">Local markets</div>
+                  <div class="tag" data-tag="Wellness & spas">Wellness & spas</div>
+                  <div class="tag" data-tag="Adventure sports">Adventure sports</div>
+                  <div class="tag" data-tag="Spiritual & temples">Spiritual & temples</div>
+                  <div class="tag" data-tag="Shopping">Shopping</div>
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Things to avoid</label>
+                <input type="text" class="form-input" id="dnaAvoid" placeholder="e.g. Crowded tourist traps, extreme cold, party hostels…">
+              </div>
+            </div>
+
+            <div class="profile-card" style="grid-column:1/-1">
+              <div class="profile-card-title"><span class="prof-icon">✎</span> About Your Travel Personality</div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Describe yourself as a traveller (this is your most powerful personalisation signal)</label>
+                <textarea class="form-input" id="dnaPersonality" rows="3" placeholder="e.g. I'm a solo traveller based in Singapore who loves immersing in local culture and food scenes. I tend to research deeply before trips and prefer meaningful experiences over ticking off sightseeing checklists. I enjoy early mornings at local markets and long evenings at neighbourhood restaurants…"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:20px">
+            <button class="btn btn-gold btn-lg" onclick="saveDNA()" style="flex:1;justify-content:center">◇ Save Travel DNA</button>
+            <button class="btn" onclick="resetDNA()">Reset to defaults</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apiModal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Connect Groq API</div>
+    <div class="modal-subtitle">VOYAGE uses Groq's free API (Llama 3.3 70B) — no credit card needed, 14,400 requests/day, keys never expire. Get your key at <a href="https://console.groq.com" style="color:var(--gold)">console.groq.com</a> → API Keys → Create API Key.</div>
+    <div class="form-group">
+      <label class="form-label">Groq API Key</label>
+      <input type="password" class="form-input" id="apiKeyInput" placeholder="gsk_…">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-gold" onclick="saveApiKey()" style="flex:1;justify-content:center">Connect</button>
+      <button class="btn" onclick="closeApiModal()">Cancel</button>
+    </div>
+    <div class="modal-note">
+      🔒 Your API key is stored locally in your browser only and sent directly to Groq's API. Free tier: 14,400 requests/day, 30 req/min — keys do not expire.
+    </div>
+  </div>
+</div>
+
+<!-- TRIP DETAIL MODAL -->
+<div class="modal-overlay" id="tripModal" style="display:none" onclick="if(event.target===this)closeTripModal()">
+  <div class="modal" style="width:680px;max-height:80vh;overflow-y:auto;max-width:95vw">
+    <div id="tripModalContent"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <button class="btn btn-sm" onclick="closeTripModal()" style="margin-left:auto">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GEMINI_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+let apiKey = localStorage.getItem('voyage_api_key') || '';
+let travelDNA = JSON.parse(localStorage.getItem('voyage_dna') || '{}');
+let savedTrips = JSON.parse(localStorage.getItem('voyage_trips') || '[]');
+let chatHistory = [];
+let selectedMoods = [];
+let planBudget = 'Mid-range ($100–200/day)';
+
+// ─── Init ────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  updateApiStatus();
+  loadDNA();
+  updateDashboard();
+  updateSidebarDNA();
+  setGreeting();
+  initTagListeners();
+});
+
+function setGreeting() {
+  const h = new Date().getHours();
+  const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  const name = travelDNA.name ? `, <em>${travelDNA.name}</em>` : ', <em>Traveller</em>';
+  document.getElementById('dashGreeting').innerHTML = `${g}${name}`;
+}
+
+function initTagListeners() {
+  document.querySelectorAll('.mood-chip').forEach(c => {
+    c.addEventListener('click', () => { c.classList.toggle('selected'); });
+  });
+  document.querySelectorAll('#discoverTags .tag, #dnaInterests .tag').forEach(t => {
+    t.addEventListener('click', () => { t.classList.toggle('selected'); });
+  });
+}
+
+// ─── Navigation ──────────────────────────────────────────────────────
+function navigate(id, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  if (id === 'mytrips') renderMyTrips();
+  if (id === 'dashboard') { updateDashboard(); setGreeting(); }
+}
+
+// ─── API ─────────────────────────────────────────────────────────────
+function updateApiStatus() {
+  const dot = document.getElementById('apiDot');
+  const label = document.getElementById('apiLabel');
+  const badge = document.getElementById('apiBtn');
+  if (apiKey) {
+    dot.className = 'dot on';
+    label.textContent = 'Groq Connected';
+    badge.className = 'api-badge connected';
+  } else {
+    dot.className = 'dot';
+    label.textContent = 'Connect Groq API';
+    badge.className = 'api-badge';
+  }
+}
+
+function openApiModal() { document.getElementById('apiModal').style.display = 'flex'; }
+function closeApiModal() { document.getElementById('apiModal').style.display = 'none'; }
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return showToast('Please enter a valid API key', 'error');
+  apiKey = key;
+  localStorage.setItem('voyage_api_key', key);
+  updateApiStatus();
+  closeApiModal();
+  showToast('Groq API connected ✦', 'success');
+}
+
+async function callClaude(messages, systemPrompt, attempt = 1) {
+  if (!apiKey) { openApiModal(); throw new Error('No API key — please connect your Groq API key first'); }
+
+  const payload = {
+    model: GEMINI_MODEL,
+    max_tokens: 6000,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      ...messages
+    ]
+  };
+
+  let res;
+  try {
+    res = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    throw new Error(`Network error: ${e.message}. Check your internet connection or try a different browser.`);
+  }
+
+  if (res.status === 429) {
+    if (attempt <= 3) {
+      const wait = attempt * 10000;
+      showToast(`Rate limit — retrying in ${wait/1000}s (attempt ${attempt}/3)…`);
+      await new Promise(r => setTimeout(r, wait));
+      return callClaude(messages, systemPrompt, attempt + 1);
+    }
+    throw new Error('Rate limit persists after 3 retries. Wait a minute and try again.');
+  }
+
+  if (!res.ok) {
+    let errMsg = `API error ${res.status}`;
+    try { const errBody = await res.json(); errMsg = errBody.error?.message || errMsg; } catch (_) {}
+    if (res.status === 401) throw new Error('Invalid API key — check your Groq key at console.groq.com');
+    if (res.status === 400) throw new Error(`Bad request — ${errMsg}`);
+    throw new Error(errMsg);
+  }
+
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text) throw new Error('Empty response — please try again.');
+  return text;
+}
+
+function getDNAContext() {
+  const d = travelDNA;
+  const interests = Array.from(document.querySelectorAll('#dnaInterests .tag.selected')).map(t => t.dataset.tag).join(', ');
+  return `
+TRAVELLER PROFILE (Travel DNA):
+- Name: ${d.name || 'unnamed traveller'}
+- Home base: ${d.home || 'not specified'}
+- Passport: ${d.passport || 'not specified'}
+- Languages: ${d.languages || 'not specified'}
+- Travel pace: ${d.pace || 'balanced'}
+- Accommodation preference: ${d.accom || 'mid-range hotels'}
+- Budget level: ${d.budget || 'mid-range'}
+- Dietary preferences: ${d.food || 'no restrictions'}
+- Food priorities: ${d.foodNotes || 'loves local food'}
+- Fitness level: ${d.fitness || 'moderate'}
+- Interests: ${d.interests || interests || 'culture, food, history'}
+- Things to avoid: ${d.avoid || 'not specified'}
+- Personality: ${d.personality || 'curious, thoughtful traveller who values authentic experiences'}
+  `.trim();
+}
+
+// ─── Plan a Trip ──────────────────────────────────────────────────────
+function selectBudget(el) {
+  document.querySelectorAll('.budget-opt').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  planBudget = el.dataset.budget;
+}
+
+async function generateItinerary() {
+  const dest = document.getElementById('planDest').value.trim();
+  const duration = document.getElementById('planDuration').value;
+  const season = document.getElementById('planSeason').value;
+  const group = document.getElementById('planGroup').value;
+  const notes = document.getElementById('planNotes').value.trim();
+  const moods = Array.from(document.querySelectorAll('#moodGrid .mood-chip.selected')).map(c => c.dataset.mood).join(', ');
+
+  const outputEl = document.getElementById('planOutput');
+  outputEl.innerHTML = `<div class="loading"><div class="spinner"></div> VOYAGE is crafting your itinerary…</div>`;
+
+  const systemPrompt = `You are VOYAGE, a world-class personal travel concierge with deep knowledge of destinations worldwide.
+
+${getDNAContext()}
+
+Your task is to create a complete, highly personalised travel itinerary using this EXACT HTML structure. Do not deviate from it.
+
+For each day use:
+<div class="itin-day" data-place="Best Wikipedia-searchable landmark or city for this day e.g. Colosseum or Kyoto">
+  <div class="day-num">01</div>
+  <div class="day-content">
+    <div class="day-title">City — <em>Theme of the Day</em></div>
+    <div class="period-block morning">
+      <div class="period-head">☀ Morning</div>
+      <div class="period-body">Description with <strong>Place Names</strong> and costs like <span class="cost-pill">~$20</span>.</div>
+    </div>
+    <div class="period-block afternoon">
+      <div class="period-head">⛅ Afternoon</div>
+      <div class="period-body">...</div>
+    </div>
+    <div class="period-block evening">
+      <div class="period-head">🌙 Evening</div>
+      <div class="period-body">...</div>
+    </div>
+    <div class="gem-box">
+      <div class="gem-label">◈ Hidden Gem</div>
+      <div class="gem-body">Specific insider tip with <strong>place name</strong> and why it's special.</div>
+    </div>
+  </div>
+</div>
+<div class="itin-day-divider"></div>
+
+After all days, add the pre-trip checklist using EXACTLY this structure (never truncate it — always complete the full list):
+<div class="checklist-box">
+  <div class="checklist-title">✦ Pre-Trip Checklist</div>
+  <ul class="check-items">
+    <li><strong>Visas:</strong> specific requirement for this destination</li>
+    <li><strong>Best booking window:</strong> when to book flights/hotels</li>
+    <li><strong>Currency:</strong> local currency and tipping norms</li>
+    <li><strong>Transport card:</strong> specific transit card or app needed</li>
+    <li><strong>Vaccinations:</strong> any required or recommended</li>
+    <li><strong>Apps to download:</strong> specific useful apps for this destination</li>
+    <li><strong>Pack:</strong> destination-specific packing tips</li>
+    <li><strong>Cultural etiquette:</strong> key customs to respect</li>
+  </ul>
+</div>
+
+Be specific: name actual restaurants, neighbourhoods, attractions. NEVER use markdown asterisks (**) — use <strong> tags only. Always complete the full checklist.`;
+
+  const userMsg = `Plan a ${duration} trip for ${group}, ${dest ? `to ${dest}` : 'to a destination that suits my Travel DNA'}.
+Season: ${season}
+Budget: ${planBudget}
+Trip vibe: ${moods}
+${notes ? `Special notes: ${notes}` : ''}
+
+Generate the complete day-by-day itinerary with full pre-trip checklist. Use only HTML as instructed — no markdown asterisks.`;
+
+  try {
+    const result = await callClaude([{ role: 'user', content: userMsg }], systemPrompt);
+    const tripName = dest || 'AI-Suggested Destination';
+    const tripData = { id: Date.now(), name: tripName, duration, group, season, budget: planBudget, moods, content: result, date: new Date().toLocaleDateString() };
+    savedTrips.unshift(tripData);
+    localStorage.setItem('voyage_trips', JSON.stringify(savedTrips));
+    updateDashboard();
+
+    outputEl.innerHTML = `
+      <div class="itinerary-output">
+        <div class="itinerary-header">
+          <div>
+            <div class="itinerary-title">Your ${dest ? `<em>${dest}</em>` : 'Personalised'} Itinerary</div>
+            <div class="itinerary-meta">
+              <span class="meta-tag">⏱ ${duration}</span>
+              <span class="meta-tag">👤 ${group}</span>
+              <span class="meta-tag">🌤 ${season}</span>
+              <span class="meta-tag">💰 ${planBudget.split('(')[0].trim()}</span>
+            </div>
+          </div>
+          <button class="btn btn-sm" onclick="navigate('mytrips', document.querySelector('[data-view=mytrips]'))">View in My Trips</button>
+        </div>
+        <div class="itin-hero-wrap" id="itinHeroWrap">
+          <div class="day-img-loading"><div class="spinner" style="width:12px;height:12px;border-width:1.5px"></div> Loading destination photo…</div>
+        </div>
+        <div class="ai-content">${result}</div>
+      </div>`;
+    loadDayImages(dest || 'travel');
+    showToast('Itinerary saved to My Trips ✦', 'success');
+  } catch (e) {
+    outputEl.innerHTML = `<div class="card" style="border-color:var(--rose)"><div style="color:var(--rose);font-size:13px">⚠ ${e.message}</div></div>`;
+  }
+}
+
+// ─── Discover ────────────────────────────────────────────────────────
+async function discoverDestinations() {
+  const mood = document.getElementById('discoverMood').value.trim();
+  const month = document.getElementById('discoverMonth').value;
+  const from = document.getElementById('discoverFrom').value.trim();
+  const tags = Array.from(document.querySelectorAll('#discoverTags .tag.selected')).map(t => t.dataset.tag).join(', ');
+  const out = document.getElementById('discoverOutput');
+
+  out.innerHTML = `<div class="loading"><div class="spinner"></div> Searching for your perfect destinations…</div>`;
+
+  const systemPrompt = `You are VOYAGE, an expert travel concierge.
+
+${getDNAContext()}
+
+When suggesting destinations, respond ONLY with a valid JSON array of exactly 3 destination objects. No preamble, no explanation, just the JSON array.
+
+Each object must have exactly these fields:
+{
+  "name": "City, Country",
+  "country": "Country",
+  "match": "92% DNA Match",
+  "why": "2–3 sentence explanation of why this matches them specifically, referencing their travel DNA",
+  "tags": ["tag1", "tag2", "tag3", "tag4"],
+  "bestMonth": "Best time info",
+  "estCost": "$X–Y/day",
+  "highlight": "One unforgettable experience specific to this destination"
+}`;
+
+  const userMsg = `Suggest 3 perfect destinations for me.
+${mood ? `My mood/feeling: ${mood}` : ''}
+Must-haves: ${tags || 'general travel'}
+Travel month: ${month}
+${from ? `Flying from: ${from}` : ''}
+
+Return only the JSON array.`;
+
+  try {
+    const result = await callClaude([{ role: 'user', content: userMsg }], systemPrompt);
+    const clean = result.replace(/```json|```/g, '').trim();
+    const dests = JSON.parse(clean);
+
+    out.innerHTML = `<div class="grid-3">${dests.map(d => `
+      <div class="destination-card">
+        <div class="dest-header">
+          <div class="dest-name">${d.name.split(',')[0]}</div>
+          <div class="dest-country">${d.name.split(',').slice(1).join(',').trim() || d.country}</div>
+          <div class="dest-match">✦ ${d.match}</div>
+        </div>
+        <div class="dest-body">
+          <div class="dest-why">${d.why}</div>
+          <div style="background:var(--gold-dim);border:1px solid rgba(196,154,69,.2);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text)">
+            <span style="color:var(--gold-l);font-size:10px;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:3px">Highlight</span>
+            ${d.highlight}
+          </div>
+          <div class="dest-tags">${d.tags.map(t => `<span class="dest-tag">${t}</span>`).join('')}</div>
+        </div>
+        <div class="dest-footer">
+          <div class="dest-cost">Best: ${d.bestMonth} · <strong>${d.estCost}</strong></div>
+          <button class="btn btn-sm" onclick="planFromDestination('${d.name.split(',')[0]}')">Plan this trip →</button>
+        </div>
+      </div>`).join('')}</div>`;
+  } catch (e) {
+    out.innerHTML = `<div class="card" style="border-color:var(--rose)"><div style="color:var(--rose);font-size:13px">⚠ ${e.message}</div></div>`;
+  }
+}
+
+function planFromDestination(dest) {
+  navigate('plan', document.querySelector('[data-view=plan]'));
+  document.getElementById('planDest').value = dest;
+  showToast(`Destination set to ${dest}`, 'success');
+}
+
+// ─── Concierge Chat ───────────────────────────────────────────────────
+const CONCIERGE_SYSTEM = () => `You are VOYAGE, a deeply knowledgeable and personal AI travel concierge. You provide expert, specific, and actionable travel advice.
+
+${getDNAContext()}
+
+Your personality: Warm, knowledgeable, and personal — like a well-travelled friend. Be specific (name actual places, give real costs, practical details). Never be vague. Keep responses concise but rich with useful detail. Use occasional **bold** for key information and structure multi-part answers clearly.`;
+
+async function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  addChatMessage('user', text);
+  chatHistory.push({ role: 'user', content: text });
+  document.getElementById('chatSendBtn').disabled = true;
+  const typingId = addTypingIndicator();
+
+  try {
+    const reply = await callClaude(chatHistory, CONCIERGE_SYSTEM());
+    removeTypingIndicator(typingId);
+    chatHistory.push({ role: 'assistant', content: reply });
+    addChatMessage('ai', reply);
+  } catch (e) {
+    removeTypingIndicator(typingId);
+    addChatMessage('ai', `⚠ ${e.message}`);
+  } finally {
+    document.getElementById('chatSendBtn').disabled = false;
+  }
+}
+
+function sendQuick(text) {
+  document.getElementById('chatInput').value = text;
+  sendChatMessage();
+}
+
+function chatKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+}
+
+function addChatMessage(role, text) {
+  const msgs = document.getElementById('chatMessages');
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatted = role === 'ai' ? formatMd(text) : escHtml(text).replace(/\n/g, '<br>');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  div.innerHTML = `<div class="msg-bubble ai-content">${formatted}</div><div class="msg-meta">${role === 'user' ? 'You' : 'VOYAGE'} · ${time}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTypingIndicator() {
+  const id = 'typing-' + Date.now();
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'message ai';
+  div.id = id;
+  div.innerHTML = `<div class="msg-bubble" style="display:flex;gap:5px;align-items:center"><div class="spinner" style="width:12px;height:12px;border-width:1.5px"></div><span style="color:var(--text-m);font-size:12px">VOYAGE is thinking…</span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return id;
+}
+
+function removeTypingIndicator(id) {
+  document.getElementById(id)?.remove();
+}
+
+function formatMd(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/^### (.*$)/gm,'<h3>$1</h3>')
+    .replace(/^## (.*$)/gm,'<h3>$1</h3>')
+    .replace(/^# (.*$)/gm,'<h3>$1</h3>')
+    .replace(/^- (.*$)/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, m => '<ul>' + m + '</ul>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\n/g,'<br>')
+    .replace(/^(.)/,'<p>$1').replace(/(.)$/,'$1</p>');
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ─── Travel DNA ───────────────────────────────────────────────────────
+function loadDNA() {
+  const d = travelDNA;
+  if (d.name) document.getElementById('dnaName').value = d.name;
+  if (d.home) document.getElementById('dnaHome').value = d.home;
+  if (d.passport) document.getElementById('dnaPassport').value = d.passport;
+  if (d.languages) document.getElementById('dnaLanguages').value = d.languages;
+  if (d.pace) document.getElementById('dnaPace').value = d.pace;
+  if (d.accom) document.getElementById('dnaAccom').value = d.accom;
+  if (d.budget) document.getElementById('dnaBudget').value = d.budget;
+  if (d.food) document.getElementById('dnaFood').value = d.food;
+  if (d.foodNotes) document.getElementById('dnaFoodNotes').value = d.foodNotes;
+  if (d.fitness) document.getElementById('dnaFitness').value = d.fitness;
+  if (d.personality) document.getElementById('dnaPersonality').value = d.personality;
+  if (d.avoid) document.getElementById('dnaAvoid').value = d.avoid;
+  if (d.interests) {
+    const saved = d.interests.split(',').map(s => s.trim());
+    document.querySelectorAll('#dnaInterests .tag').forEach(t => {
+      if (saved.includes(t.dataset.tag)) t.classList.add('selected');
+    });
+  }
+}
+
+function saveDNA() {
+  const interests = Array.from(document.querySelectorAll('#dnaInterests .tag.selected')).map(t => t.dataset.tag).join(', ');
+  travelDNA = {
+    name: document.getElementById('dnaName').value.trim(),
+    home: document.getElementById('dnaHome').value.trim(),
+    passport: document.getElementById('dnaPassport').value.trim(),
+    languages: document.getElementById('dnaLanguages').value.trim(),
+    pace: document.getElementById('dnaPace').value,
+    accom: document.getElementById('dnaAccom').value,
+    budget: document.getElementById('dnaBudget').value,
+    food: document.getElementById('dnaFood').value.trim(),
+    foodNotes: document.getElementById('dnaFoodNotes').value.trim(),
+    fitness: document.getElementById('dnaFitness').value,
+    interests,
+    avoid: document.getElementById('dnaAvoid').value.trim(),
+    personality: document.getElementById('dnaPersonality').value.trim(),
+  };
+  localStorage.setItem('voyage_dna', JSON.stringify(travelDNA));
+  updateDashboard();
+  updateSidebarDNA();
+  setGreeting();
+  showToast('Travel DNA saved ◇', 'success');
+}
+
+function resetDNA() {
+  travelDNA = {};
+  localStorage.removeItem('voyage_dna');
+  loadDNA();
+  showToast('Travel DNA reset');
+}
+
+function updateSidebarDNA() {
+  const el = document.getElementById('dnaTags');
+  const tags = [];
+  if (travelDNA.budget) tags.push(travelDNA.budget.split(' ')[0]);
+  if (travelDNA.pace) tags.push(travelDNA.pace.split('—')[0].trim().split(' ').slice(-1)[0]);
+  if (travelDNA.interests) travelDNA.interests.split(',').slice(0,3).forEach(t => tags.push(t.trim()));
+  el.innerHTML = tags.slice(0, 5).map(t => `<div class="dna-tag">${t}</div>`).join('');
+  if (!tags.length) el.innerHTML = `<div style="font-size:12px;color:var(--text-s)">Set your Travel DNA →</div>`;
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────
+function updateDashboard() {
+  document.getElementById('statTrips').textContent = savedTrips.length;
+  const dests = [...new Set(savedTrips.map(t => t.name))].length;
+  document.getElementById('statCountries').textContent = dests;
+  const style = travelDNA.pace ? travelDNA.pace.split('—')[0].trim().split(' ').slice(-1)[0] : '—';
+  document.getElementById('statStyle').textContent = style;
+  const b = travelDNA.budget ? travelDNA.budget.split('-')[0].trim().split(' ').slice(-1)[0] : '—';
+  document.getElementById('statBudget').textContent = b;
+
+  const recent = document.getElementById('recentTrips');
+  if (!savedTrips.length) {
+    recent.innerHTML = `<div style="color:var(--text-m);font-size:13px;padding:20px;text-align:center;background:var(--s1);border:1px dashed var(--border);border-radius:var(--r)">No saved trips yet — plan your first journey above ✦</div>`;
+  } else {
+    recent.innerHTML = savedTrips.slice(0, 3).map(t => `
+      <div class="trip-card" onclick="openTrip(${t.id})">
+        <div class="trip-icon">✈</div>
+        <div class="trip-info" style="flex:1">
+          <div class="trip-name">${t.name}</div>
+          <div class="trip-meta">${t.duration} · ${t.group} · ${t.date}</div>
+          <div class="trip-tags">
+            <span class="trip-tag">${t.budget.split('(')[0].trim()}</span>
+            <span class="trip-tag">${t.season.split(' ')[0]}</span>
+          </div>
+        </div>
+        <span style="color:var(--text-s);font-size:18px;align-self:center">›</span>
+      </div>`).join('');
+  }
+
+  const insight = document.getElementById('dashInsight');
+  if (travelDNA.personality) {
+    insight.innerHTML = `<div class="insight-bar"><strong>Your Travel Identity:</strong> ${travelDNA.personality.slice(0, 180)}${travelDNA.personality.length > 180 ? '…' : ''}</div>`;
+  }
+}
+
+function renderMyTrips() {
+  const list = document.getElementById('myTripsList');
+  const count = document.getElementById('tripCount');
+  count.textContent = savedTrips.length ? `(${savedTrips.length})` : '';
+  if (!savedTrips.length) {
+    list.innerHTML = `<div style="color:var(--text-m);font-size:13px;padding:30px;text-align:center;background:var(--s1);border:1px dashed var(--border);border-radius:var(--r)">No saved trips yet. Plan your first journey → ✦</div>`;
+    return;
+  }
+  list.innerHTML = savedTrips.map(t => `
+    <div class="trip-card">
+      <div class="trip-icon" style="font-size:20px">✈</div>
+      <div class="trip-info" style="flex:1">
+        <div class="trip-name">${t.name}</div>
+        <div class="trip-meta">${t.duration} · ${t.group} · Saved ${t.date}</div>
+        <div class="trip-tags">
+          <span class="trip-tag">${t.budget.split('(')[0].trim()}</span>
+          <span class="trip-tag">${t.season.split(' ')[0]}</span>
+          ${t.moods ? t.moods.split(',').slice(0,2).map(m=>`<span class="trip-tag">${m.trim().split(' ')[0]}</span>`).join('') : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center">
+        <button class="btn btn-sm" onclick="openTrip(${t.id})">View</button>
+        <button class="btn btn-sm" style="color:var(--rose);border-color:var(--rose)" onclick="deleteTrip(${t.id},event)">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function openTrip(id) {
+  const t = savedTrips.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('tripModalContent').innerHTML = `
+    <div style="font-family:var(--font-h);font-size:24px;font-weight:400;margin-bottom:8px">${t.name}</div>
+    <div style="display:flex;gap:12px;font-size:12px;color:var(--text-m);margin-bottom:16px">
+      <span>⏱ ${t.duration}</span><span>👤 ${t.group}</span><span>🌤 ${t.season}</span><span>💰 ${t.budget.split('(')[0]}</span>
+    </div>
+    <div class="ai-content">${t.content}</div>`;
+  document.getElementById('tripModal').style.display = 'flex';
+}
+
+function closeTripModal() { document.getElementById('tripModal').style.display = 'none'; }
+
+function deleteTrip(id, e) {
+  e.stopPropagation();
+  savedTrips = savedTrips.filter(t => t.id !== id);
+  localStorage.setItem('voyage_trips', JSON.stringify(savedTrips));
+  renderMyTrips();
+  updateDashboard();
+  showToast('Trip removed');
+}
+
+// ─── Image Loading (Wikipedia API) ───────────────────────────────────
+async function getWikiImage(query) {
+  try {
+    const url = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(query)}&prop=pageimages&format=json&pithumbsize=900&origin=*`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const pages = data.query?.pages;
+    if (!pages) return null;
+    const page = Object.values(pages)[0];
+    return page?.thumbnail?.source || null;
+  } catch (e) { return null; }
+}
+
+async function loadDayImages(destination) {
+  // Hero banner
+  const heroWrap = document.getElementById('itinHeroWrap');
+  if (heroWrap) {
+    const heroUrl = await getWikiImage(destination);
+    if (heroUrl) {
+      heroWrap.innerHTML = `<img src="" alt="${destination}"><div class="hero-overlay"></div><div class="hero-label">${destination}</div>`;
+      const img = heroWrap.querySelector('img');
+      img.onload = () => img.classList.add('vis');
+      img.onerror = () => { heroWrap.style.display = 'none'; };
+      img.src = heroUrl;
+    } else {
+      heroWrap.style.display = 'none';
+    }
+  }
+
+  // Per-day images
+  const days = document.querySelectorAll('#planOutput .itin-day[data-place]');
+  for (const day of days) {
+    const place = day.dataset.place;
+    const content = day.querySelector('.day-content');
+    const titleEl = content?.querySelector('.day-title');
+    if (!content || !titleEl) continue;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'day-img-wrap';
+    wrap.innerHTML = `<div class="day-img-loading"><div class="spinner" style="width:10px;height:10px;border-width:1.5px"></div></div>`;
+    titleEl.insertAdjacentElement('afterend', wrap);
+
+    const imgUrl = await getWikiImage(place);
+    if (imgUrl) {
+      const img = new Image();
+      img.alt = place;
+      img.onload = () => { img.classList.add('vis'); wrap.innerHTML = ''; wrap.appendChild(img); };
+      img.onerror = () => { wrap.style.display = 'none'; };
+      img.src = imgUrl;
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type === 'success' ? ' success' : '');
+  setTimeout(() => { t.className = 'toast'; }, 2800);
+}
+</script>
+</body>
+</html>
