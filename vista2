@@ -857,7 +857,7 @@ textarea.form-input{resize:vertical;min-height:72px;line-height:1.5}
 // ─── Constants & State ──────────────────────────────────────────
 const MODEL = 'llama-3.3-70b-versatile';
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const DEMO_KEY = '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'; // ← Replace before publishing
+const DEMO_KEY = 'YOUR_GROQ_KEY_HERE'; // ← Replace before publishing
 const FREE_LIMIT = 5;
 let usageCount = parseInt(localStorage.getItem('vista_usage') || '0');
 let travelDNA = JSON.parse(localStorage.getItem('vista_dna') || '{}');
